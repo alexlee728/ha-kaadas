@@ -1,0 +1,92 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "连接 Kaadas Smart",
+        "description": "请使用专供 Home Assistant 的 Kaadas Smart 账号登录。与手机 App 共用同一账号时，两边可能会互相挤掉线。",
+        "data": {
+          "account": "邮箱或手机号",
+          "password": "密码",
+          "region": "区域"
+        }
+      },
+      "reauth_confirm": {
+        "title": "重新登录",
+        "description": "Kaadas 云端拒绝了 {account} 的会话，请输入密码重新登录。",
+        "data": {
+          "password": "密码"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "无法连接",
+      "invalid_auth": "账号或密码无效",
+      "unknown": "发生未知错误"
+    },
+    "abort": {
+      "already_configured": "此 Kaadas 账号已配置",
+      "reauth_successful": "重新登录成功",
+      "wrong_account": "输入的凭据属于另一个 Kaadas 账号"
+    }
+  },
+  "selector": {
+    "region": {
+      "options": {
+        "cn": "中国大陆",
+        "sg": "国际（新加坡）"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "lock": {
+        "name": "门锁"
+      },
+      "problem": {
+        "name": "设备故障"
+      }
+    },
+    "event": {
+      "unlock": {
+        "name": "开锁",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "fingerprint": "指纹",
+              "face": "人脸",
+              "visitor": "访客",
+              "mechanical_key": "机械钥匙",
+              "open_button": "室内开门键",
+              "other": "其他"
+            }
+          }
+        }
+      },
+      "doorbell": {
+        "name": "门铃",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "ring": "按门铃"
+            }
+          }
+        }
+      },
+      "alarm": {
+        "name": "告警",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "alarm": "告警"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "rssi": {
+        "name": "Wi-Fi 信号"
+      }
+    }
+  }
+}

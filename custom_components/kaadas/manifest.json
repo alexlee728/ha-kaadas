@@ -1,0 +1,16 @@
+{
+  "domain": "kaadas",
+  "name": "Kaadas Smart",
+  "codeowners": [
+    "@alexlee728"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/alexlee728/ha-kaadas",
+  "integration_type": "hub",
+  "iot_class": "cloud_push",
+  "issue_tracker": "https://github.com/alexlee728/ha-kaadas/issues",
+  "requirements": [
+    "paho-mqtt>=2.1.0,<3"
+  ],
+  "version": "0.2.0"
+}

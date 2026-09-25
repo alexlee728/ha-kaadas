@@ -1,0 +1,92 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect Kaadas Smart",
+        "description": "Sign in with a Kaadas Smart account dedicated to Home Assistant. When Home Assistant and the Kaadas app share an account, they may disconnect each other.",
+        "data": {
+          "account": "Email or phone number",
+          "password": "Password",
+          "region": "Region"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Sign in again",
+        "description": "The Kaadas cloud rejected the session of {account}. Enter the password to sign in again.",
+        "data": {
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect",
+      "invalid_auth": "Invalid authentication",
+      "unknown": "Unexpected error"
+    },
+    "abort": {
+      "already_configured": "This Kaadas account is already configured",
+      "reauth_successful": "Signed in again successfully",
+      "wrong_account": "The credentials belong to a different Kaadas account"
+    }
+  },
+  "selector": {
+    "region": {
+      "options": {
+        "cn": "Mainland China",
+        "sg": "International (Singapore)"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "lock": {
+        "name": "Lock"
+      },
+      "problem": {
+        "name": "Device problem"
+      }
+    },
+    "event": {
+      "unlock": {
+        "name": "Unlock",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "fingerprint": "Fingerprint",
+              "face": "Face",
+              "visitor": "Visitor",
+              "mechanical_key": "Mechanical key",
+              "open_button": "Open button",
+              "other": "Other"
+            }
+          }
+        }
+      },
+      "doorbell": {
+        "name": "Doorbell",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "ring": "Ring"
+            }
+          }
+        }
+      },
+      "alarm": {
+        "name": "Alarm",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "alarm": "Alarm"
+            }
+          }
+        }
+      }
+    },
+    "sensor": {
+      "rssi": {
+        "name": "Wi-Fi signal"
+      }
+    }
+  }
+}
