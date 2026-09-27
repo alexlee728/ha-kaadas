@@ -29,6 +29,7 @@ async def async_setup_entry(
         return [
             KaadasUnlockEvent(hub, device_id),
             KaadasDoorbellEvent(hub, device_id),
+            KaadasLoiteringEvent(hub, device_id),
             KaadasAlarmEvent(hub, device_id),
         ]
 
@@ -95,8 +96,25 @@ class KaadasDoorbellEvent(KaadasEventEntity):
         self.async_write_ha_state()
 
 
+class KaadasLoiteringEvent(KaadasEventEntity):
+    """Fires when the lock reports someone loitering in front of the door."""
+
+    _attr_device_class = EventDeviceClass.MOTION
+    _attr_event_types = ["loitering"]
+
+    def __init__(self, hub: KaadasHub, device_id: str) -> None:
+        super().__init__(hub, device_id, "loitering")
+
+    @callback
+    def _handle_lock_event(self, message: KaadasMessage) -> None:
+        if not isinstance(message, LockAlarm) or not message.is_loitering:
+            return
+        self._trigger_event("loitering")
+        self.async_write_ha_state()
+
+
 class KaadasAlarmEvent(KaadasEventEntity):
-    """Fires when the lock raises an alarm other than the doorbell."""
+    """Fires when the lock raises an alarm other than the doorbell or loitering."""
 
     _attr_event_types = ["alarm"]
 
@@ -105,7 +123,11 @@ class KaadasAlarmEvent(KaadasEventEntity):
 
     @callback
     def _handle_lock_event(self, message: KaadasMessage) -> None:
-        if not isinstance(message, LockAlarm) or message.is_doorbell:
+        if (
+            not isinstance(message, LockAlarm)
+            or message.is_doorbell
+            or message.is_loitering
+        ):
             return
         self._trigger_event("alarm", {"alarm_code": message.alarm_code})
         self.async_write_ha_state()

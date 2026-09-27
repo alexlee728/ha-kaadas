@@ -53,6 +53,7 @@ LOCK = "binary_sensor.kaadas_wf0000000001_lock"
 PROBLEM = "binary_sensor.kaadas_wf0000000001_device_problem"
 UNLOCK = "event.kaadas_wf0000000001_unlock"
 DOORBELL = "event.kaadas_wf0000000001_doorbell"
+LOITERING = "event.kaadas_wf0000000001_loitering"
 ALARM = "event.kaadas_wf0000000001_alarm"
 RSSI = "sensor.kaadas_wf0000000001_wi_fi_signal"
 
@@ -141,13 +142,19 @@ async def test_unlock_and_lock(
 async def test_doorbell_is_not_an_alarm(
     hass: HomeAssistant, setup_integration: FakeMqttClient
 ) -> None:
-    """Doorbell presses and other alarms fire separate entities."""
+    """Doorbell presses, loitering and other alarms fire separate entities."""
     setup_integration.push(lock_info())
     await hass.async_block_till_done()
 
     setup_integration.push(alarm(96))
     await hass.async_block_till_done()
     assert hass.states.get(DOORBELL).attributes["event_type"] == "ring"
+    assert hass.states.get(LOITERING).state == STATE_UNKNOWN
+    assert hass.states.get(ALARM).state == STATE_UNKNOWN
+
+    setup_integration.push(alarm(112))
+    await hass.async_block_till_done()
+    assert hass.states.get(LOITERING).attributes["event_type"] == "loitering"
     assert hass.states.get(ALARM).state == STATE_UNKNOWN
 
     setup_integration.push(alarm(3))

@@ -77,6 +77,16 @@ def test_parse_doorbell_alarm() -> None:
     assert not parse_message(alarm(3)).is_doorbell
 
 
+def test_parse_loitering_alarm() -> None:
+    """Alarm code 112 reports someone loitering at the door."""
+    message = parse_message(alarm(112))
+
+    assert isinstance(message, LockAlarm)
+    assert message.is_loitering
+    assert not message.is_doorbell
+    assert not parse_message(alarm(96)).is_loitering
+
+
 def test_timestamp_is_utc() -> None:
     """Timestamps are epoch seconds in UTC."""
     moment = datetime(2026, 9, 25, 8, 0, tzinfo=UTC)

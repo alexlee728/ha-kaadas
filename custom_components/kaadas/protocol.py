@@ -20,6 +20,8 @@ RECORD_CODE_UNLOCKED = 2
 RECORD_SOURCE_LOCKED = 0
 
 ALARM_CODE_DOORBELL = 96
+# Someone has stayed in front of the door for a long time.
+ALARM_CODE_LOITERING = 112
 
 NO_ERROR_CODE = "00000000"
 
@@ -91,7 +93,7 @@ class LockRecord(KaadasMessage):
 
 @dataclass(frozen=True, slots=True, kw_only=True)
 class LockAlarm(KaadasMessage):
-    """Alarm raised by the lock, including doorbell presses."""
+    """Alarm raised by the lock, including doorbell presses and loitering."""
 
     alarm_code: int | None
 
@@ -99,6 +101,11 @@ class LockAlarm(KaadasMessage):
     def is_doorbell(self) -> bool:
         """Return whether the alarm is a doorbell press."""
         return self.alarm_code == ALARM_CODE_DOORBELL
+
+    @property
+    def is_loitering(self) -> bool:
+        """Return whether the alarm reports someone loitering at the door."""
+        return self.alarm_code == ALARM_CODE_LOITERING
 
 
 def decode_payload(raw: bytes) -> Any | None:

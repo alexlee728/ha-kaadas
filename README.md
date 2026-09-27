@@ -16,6 +16,7 @@ Each lock is added as a device with these entities:
 | Lock | Binary sensor | On when the lock is unlocked. The last known state is kept across restarts. |
 | Unlock | Event | Fires on every unlock. The event type is the unlock method (fingerprint, face, visitor, mechanical key, open button, other); the attributes name the user and credential. |
 | Doorbell | Event | Fires when the doorbell button on the lock is pressed. |
+| Loitering | Event | Fires when the lock reports that someone has stayed in front of the door for a long time. |
 | Alarm | Event | Fires when the lock raises any other alarm; the `alarm_code` attribute holds the raw code. |
 | Device problem | Binary sensor | Diagnostic. On when the lock reports an error code. |
 | Wi-Fi signal | Sensor | Diagnostic, disabled by default. Updated only when the lock wakes up. |

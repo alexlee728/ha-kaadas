@@ -72,6 +72,16 @@
           }
         }
       },
+      "loitering": {
+        "name": "Loitering",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "loitering": "Loitering"
+            }
+          }
+        }
+      },
       "alarm": {
         "name": "Alarm",
         "state_attributes": {

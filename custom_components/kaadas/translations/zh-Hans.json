@@ -72,6 +72,16 @@
           }
         }
       },
+      "loitering": {
+        "name": "门外逗留",
+        "state_attributes": {
+          "event_type": {
+            "state": {
+              "loitering": "有人逗留"
+            }
+          }
+        }
+      },
       "alarm": {
         "name": "告警",
         "state_attributes": {
