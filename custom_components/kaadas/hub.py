@@ -53,6 +53,7 @@ class DeviceState:
     lock_changed_at: datetime | None = None
     error_code: str | None = None
     rssi: int | None = None
+    battery: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -314,6 +315,8 @@ def _apply_message(
                 state.error_code = message.error_code
             if message.rssi is not None:
                 state.rssi = message.rssi
+            if message.battery is not None:
+                state.battery = message.battery
         case LockRecord() if message.is_lock or message.is_unlock:
             # Timestamps have whole-second precision. Clamping to the receipt
             # time keeps a lock clock running ahead from making later records

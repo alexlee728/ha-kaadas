@@ -96,6 +96,9 @@
     "sensor": {
       "rssi": {
         "name": "Wi-Fi 信号"
+      },
+      "battery": {
+        "name": "电池"
       }
     }
   }

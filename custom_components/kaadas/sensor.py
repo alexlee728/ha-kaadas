@@ -7,7 +7,11 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
 )
-from homeassistant.const import SIGNAL_STRENGTH_DECIBELS_MILLIWATT, EntityCategory
+from homeassistant.const import (
+    PERCENTAGE,
+    SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
+    EntityCategory,
+)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
@@ -23,9 +27,29 @@ async def async_setup_entry(
     """Set up Kaadas sensors."""
 
     def entities_for_device(hub: KaadasHub, device_id: str) -> list[SensorEntity]:
-        return [KaadasSignalStrengthSensor(hub, device_id)]
+        return [
+            KaadasBatterySensor(hub, device_id),
+            KaadasSignalStrengthSensor(hub, device_id),
+        ]
 
     async_setup_device_entities(hass, entry, async_add_entities, entities_for_device)
+
+
+class KaadasBatterySensor(KaadasEntity, SensorEntity):
+    """Lock battery percentage, updated whenever the lock wakes up."""
+
+    _attr_device_class = SensorDeviceClass.BATTERY
+    _attr_native_unit_of_measurement = PERCENTAGE
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(self, hub: KaadasHub, device_id: str) -> None:
+        super().__init__(hub, device_id, "battery")
+
+    @property
+    def native_value(self) -> int | None:
+        """Return the battery percentage."""
+        return self.device_state.battery
 
 
 class KaadasSignalStrengthSensor(KaadasEntity, SensorEntity):

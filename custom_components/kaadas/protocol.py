@@ -58,6 +58,7 @@ class LockInfo(KaadasMessage):
     model: str | None
     error_code: str | None
     rssi: int | None
+    battery: int | None = None
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
@@ -116,13 +117,21 @@ def decode_payload(raw: bytes) -> Any | None:
         return None
 
 
-def parse_message(payload: Any) -> KaadasMessage | None:
+def parse_message(payload: Any) -> KaadasMessage | None:  # noqa: PLR0911
     """Parse a decoded payload into a lock message.
 
     Returns None for anything that is not a recognised lock event.
     """
     if not isinstance(payload, dict):
         return None
+
+    # Newer locks (e.g. the Q20F Pro) use the "kiot" protocol. The messages
+    # carry a "cmd" ("event"/"report"/"action") and a "did" (the Wi-Fi module
+    # ID) instead of the older msgtype/func/eventtype/eventparams layout.
+    if "cmd" in payload and "did" in payload:
+        return _parse_kiot_message(payload)
+
+    # Older locks (e.g. the P30 Pro Max) use the "wfevent" protocol.
     if payload.get("msgtype") != "event" or payload.get("func") != "wfevent":
         return None
 
@@ -161,6 +170,119 @@ def parse_message(payload: Any) -> KaadasMessage | None:
                 alarm_code=_to_int(params.get("alarmCode")),
             )
     return None
+
+
+def _parse_kiot_message(payload: dict[str, Any]) -> KaadasMessage | None:  # noqa: PLR0911
+    """Parse a kiot-protocol payload sent by newer locks.
+
+    Example (unlock)::
+
+        {"cmd": "event", "time": 1795098018, "msg_id": 16,
+         "body": {"service": "lock_service", "event": "e_unlock",
+                  "args": [{"name": "...", "value": 1795098018},
+                           {"name": "...", "value": 10},
+                           {"name": "...", "value": 102}]},
+         "did": "wyw6bh12w1r1z1ku760ryyy1"}
+
+    Example (lock)::
+
+        {"cmd": "event", "body": {"service": "lock_service", "event": "e_lock",
+                                  "args": [{"name": "...", "value": 1795098023},
+                                           {"name": "...", "value": 255}]},
+         "did": "wyw6bh12w1r1z1ku760ryyy1"}
+
+    For e_unlock the positional args are ``[timestamp, method, user_id]``; for
+    e_lock they are ``[timestamp, ...]``.
+    """
+    device_id = _to_str(payload.get("did"))
+    if device_id is None:
+        return None
+
+    body = payload.get("body")
+    if not isinstance(body, dict):
+        return None
+
+    cmd = payload.get("cmd")
+
+    if cmd == "report":
+        # Status reports carry a list of per-service properties; the service
+        # is on each property, not on the body.
+        properties = body.get("properties")
+        if isinstance(properties, list):
+            for prop in properties:
+                if isinstance(prop, dict) and prop.get("service") == "battery_service":
+                    battery = _battery_level(prop)
+                    if battery is not None:
+                        return LockInfo(
+                            device_id=device_id,
+                            lock_id=None,
+                            lock_name=None,
+                            timestamp=_to_datetime(payload.get("time")),
+                            serial_number=None,
+                            model=None,
+                            error_code=None,
+                            rssi=None,
+                            battery=battery,
+                        )
+        return None
+
+    if cmd != "event" or body.get("service") != "lock_service":
+        return None
+
+    event = body.get("event")
+    args = body.get("args")
+    args = args if isinstance(args, list) else []
+    values = [_to_int(arg.get("value")) for arg in args if isinstance(arg, dict)]
+
+    if event == "e_unlock":
+        timestamp = (
+            _to_datetime(values[0]) if values else _to_datetime(payload.get("time"))
+        )
+        return LockRecord(
+            device_id=device_id,
+            lock_id=None,
+            lock_name=None,
+            timestamp=timestamp,
+            event_code=RECORD_CODE_UNLOCKED,
+            event_source=values[1] if len(values) > 1 else None,
+            user_id=values[2] if len(values) > 2 else None,
+            user_name=None,
+            credential_name=None,
+        )
+
+    if event == "e_lock":
+        timestamp = (
+            _to_datetime(values[0]) if values else _to_datetime(payload.get("time"))
+        )
+        return LockRecord(
+            device_id=device_id,
+            lock_id=None,
+            lock_name=None,
+            timestamp=timestamp,
+            event_code=RECORD_CODE_LOCKED,
+            event_source=RECORD_SOURCE_LOCKED,
+            user_id=None,
+            user_name=None,
+            credential_name=None,
+        )
+
+    return None
+
+
+def _battery_level(prop: dict[str, Any]) -> int | None:
+    """Extract the battery percentage from a battery_service property.
+
+    The value is a nested list of cells, e.g.
+    ``[[{value: index}, {value: electricity}, {value: charging},
+    {value: cycles}]]``; the second cell holds the percentage.
+    """
+    value = prop.get("value")
+    if not isinstance(value, list) or not value or not isinstance(value[0], list):
+        return None
+    cells = value[0]
+    if len(cells) < 2 or not isinstance(cells[1], dict):
+        return None
+    return _to_int(cells[1].get("value"))
 
 
 def _to_str(value: Any) -> str | None:

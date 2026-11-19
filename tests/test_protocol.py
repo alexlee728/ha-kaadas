@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import Any
 
 import pytest
 
@@ -135,3 +136,103 @@ def test_decode_payload() -> None:
     assert decode_payload(b'{"a": 1}') == {"a": 1}
     assert decode_payload(b"not json") is None
     assert decode_payload(b"\xff\xfe") is None
+
+
+def kiot_event(
+    event: str,
+    args: list[dict[str, Any]],
+    *,
+    time: int = 1795098018,
+) -> dict[str, Any]:
+    """Build a kiot-protocol event message as newer locks send it."""
+    return {
+        "cmd": "event",
+        "time": time,
+        "msg_id": 16,
+        "body": {"service": "lock_service", "event": event, "args": args},
+        "did": "wyw6bh12w1r1z1ku760ryyy1",
+    }
+
+
+def test_parse_kiot_unlock() -> None:
+    """A kiot-protocol e_unlock becomes an unlock record."""
+    message = parse_message(
+        kiot_event(
+            "e_unlock",
+            [
+                {"name": "timestamp", "value": 1795098018, "service": "lock_service"},
+                {"name": "method", "value": 10, "service": "lock_service"},
+                {"name": "user_id", "value": 102, "service": "lock_service"},
+            ],
+        )
+    )
+
+    assert isinstance(message, LockRecord)
+    assert message.is_unlock
+    assert not message.is_lock
+    assert message.unlock_method == "open_button"
+    assert message.user_id == 102
+    assert message.device_id == "wyw6bh12w1r1z1ku760ryyy1"
+
+
+def test_parse_kiot_lock() -> None:
+    """A kiot-protocol e_lock becomes a lock record."""
+    message = parse_message(
+        kiot_event(
+            "e_lock",
+            [
+                {"name": "timestamp", "value": 1795098023, "service": "lock_service"},
+                {"name": "source", "value": 255, "service": "lock_service"},
+            ],
+        )
+    )
+
+    assert isinstance(message, LockRecord)
+    assert message.is_lock
+    assert not message.is_unlock
+
+
+def test_parse_kiot_battery() -> None:
+    """A kiot-protocol battery_service report yields the battery level."""
+
+    def cell(value: int) -> dict[str, Any]:
+        return {"name": "n", "value": value, "service": "battery_service"}
+
+    payload = {
+        "cmd": "report",
+        "time": 1795098021,
+        "msg_id": 17,
+        "body": {
+            "properties": [
+                {
+                    "name": "battery",
+                    "value": [[cell(1), cell(42), cell(0), cell(0)]],
+                    "service": "battery_service",
+                }
+            ]
+        },
+        "did": "wyw6bh12w1r1z1ku760ryyy1",
+    }
+
+    message = parse_message(payload)
+
+    assert isinstance(message, LockInfo)
+    assert message.battery == 42
+    assert message.device_id == "wyw6bh12w1r1z1ku760ryyy1"
+
+
+def test_ignores_kiot_actions() -> None:
+    """kiot-protocol action messages are not lock events."""
+    payload = {
+        "cmd": "action",
+        "source": "srv:messaging",
+        "time": 1795098021,
+        "body": {
+            "service": "lock_service",
+            "action": "a_get_records_data",
+            "status": 200,
+        },
+        "did": "wyw6bh12w1r1z1ku760ryyy1",
+    }
+
+    assert parse_message(payload) is None
